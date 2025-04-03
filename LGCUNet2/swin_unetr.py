@@ -1,20 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Oct 15 15:43:49 2024
-
-@author: zyserver
-"""
-
-# Copyright (c) MONAI Consortium
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#     http://www.apache.org/licenses/LICENSE-2.0
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 
 import itertools
 from typing import Optional, Sequence, Tuple, Type, Union
@@ -71,38 +54,7 @@ class SwinUNETR(nn.Module):
         spatial_dims: int = 3,
         downsample="merging",
     ) -> None:
-        """
-        Args:
-            img_size: dimension of input image.
-            in_channels: dimension of input channels.
-            out_channels: dimension of output channels.
-            feature_size: dimension of network feature size.
-            depths: number of layers in each stage.
-            num_heads: number of attention heads.
-            norm_name: feature normalization type and arguments.
-            drop_rate: dropout rate.
-            attn_drop_rate: attention dropout rate.
-            dropout_path_rate: drop path rate.
-            normalize: normalize output intermediate features in each stage.
-            use_checkpoint: use gradient checkpointing for reduced memory usage.
-            spatial_dims: number of spatial dims.
-            downsample: module used for downsampling, available options are `"mergingv2"`, `"merging"` and a
-                user-specified `nn.Module` following the API defined in :py:class:`monai.networks.nets.PatchMerging`.
-                The default is currently `"merging"` (the original version defined in v0.9.0).
-
-        Examples::
-
-            # for 3D single channel input with size (96,96,96), 4-channel output and feature size of 48.
-            >>> net = SwinUNETR(img_size=(96,96,96), in_channels=1, out_channels=4, feature_size=48)
-
-            # for 3D 4-channel input with size (128,128,128), 3-channel output and (2,4,2,2) layers in each stage.
-            >>> net = SwinUNETR(img_size=(128,128,128), in_channels=4, out_channels=3, depths=(2,4,2,2))
-
-            # for 2D single channel input with size (96,96), 2-channel output and gradient checkpointing.
-            >>> net = SwinUNETR(img_size=(96,96), in_channels=3, out_channels=2, use_checkpoint=True, spatial_dims=2)
-
-        """
-
+       
         super().__init__()
 
         img_size = ensure_tuple_rep(img_size, spatial_dims)
@@ -239,15 +191,6 @@ class SwinUNETR(nn.Module):
 
 
 def window_partition(x, window_size):
-    """window partition operation based on: "Liu et al.,
-    Swin Transformer: Hierarchical Vision Transformer using Shifted Windows
-    <https://arxiv.org/abs/2103.14030>"
-    https://github.com/microsoft/Swin-Transformer
-
-     Args:
-        x: input tensor.
-        window_size: local window size.
-    """
     x_shape = x.size()
     if len(x_shape) == 5:
         b, d, h, w, c = x_shape
@@ -272,16 +215,7 @@ def window_partition(x, window_size):
 
 
 def window_reverse(windows, window_size, dims):
-    """window reverse operation based on: "Liu et al.,
-    Swin Transformer: Hierarchical Vision Transformer using Shifted Windows
-    <https://arxiv.org/abs/2103.14030>"
-    https://github.com/microsoft/Swin-Transformer
 
-     Args:
-        windows: windows tensor.
-        window_size: local window size.
-        dims: dimension values.
-    """
     if len(dims) == 4:
         b, d, h, w = dims
         x = windows.view(
@@ -304,16 +238,6 @@ def window_reverse(windows, window_size, dims):
 
 
 def get_window_size(x_size, window_size, shift_size=None):
-    """Computing window size based on: "Liu et al.,
-    Swin Transformer: Hierarchical Vision Transformer using Shifted Windows
-    <https://arxiv.org/abs/2103.14030>"
-    https://github.com/microsoft/Swin-Transformer
-
-     Args:
-        x_size: input size.
-        window_size: local window size.
-        shift_size: window shifting size.
-    """
 
     use_window_size = list(window_size)
     if shift_size is not None:
@@ -331,12 +255,6 @@ def get_window_size(x_size, window_size, shift_size=None):
 
 
 class WindowAttention(nn.Module):
-    """
-    Window based multi-head self attention module with relative position bias based on: "Liu et al.,
-    Swin Transformer: Hierarchical Vision Transformer using Shifted Windows
-    <https://arxiv.org/abs/2103.14030>"
-    https://github.com/microsoft/Swin-Transformer
-    """
 
     def __init__(
         self,
@@ -347,16 +265,6 @@ class WindowAttention(nn.Module):
         attn_drop: float = 0.0,
         proj_drop: float = 0.0,
     ) -> None:
-        """
-        Args:
-            dim: number of feature channels.
-            num_heads: number of attention heads.
-            window_size: local window size.
-            qkv_bias: add a learnable bias to query, key, value.
-            attn_drop: attention dropout rate.
-            proj_drop: dropout rate of output.
-        """
-
         super().__init__()
         self.dim = dim
         self.window_size = window_size
@@ -440,12 +348,6 @@ class WindowAttention(nn.Module):
 
 
 class SwinTransformerBlock(nn.Module):
-    """
-    Swin Transformer block based on: "Liu et al.,
-    Swin Transformer: Hierarchical Vision Transformer using Shifted Windows
-    <https://arxiv.org/abs/2103.14030>"
-    https://github.com/microsoft/Swin-Transformer
-    """
 
     def __init__(
         self,
@@ -462,21 +364,6 @@ class SwinTransformerBlock(nn.Module):
         norm_layer: Type[LayerNorm] = nn.LayerNorm,
         use_checkpoint: bool = False,
     ) -> None:
-        """
-        Args:
-            dim: number of feature channels.
-            num_heads: number of attention heads.
-            window_size: local window size.
-            shift_size: window shift size.
-            mlp_ratio: ratio of mlp hidden dim to embedding dim.
-            qkv_bias: add a learnable bias to query, key, value.
-            drop: dropout rate.
-            attn_drop: attention dropout rate.
-            drop_path: stochastic depth rate.
-            act_layer: activation layer.
-            norm_layer: normalization layer.
-            use_checkpoint: use gradient checkpointing for reduced memory usage.
-        """
 
         super().__init__()
         self.dim = dim
@@ -606,20 +493,9 @@ class SwinTransformerBlock(nn.Module):
 
 
 class PatchMergingV2(nn.Module):
-    """
-    Patch merging layer based on: "Liu et al.,
-    Swin Transformer: Hierarchical Vision Transformer using Shifted Windows
-    <https://arxiv.org/abs/2103.14030>"
-    https://github.com/microsoft/Swin-Transformer
-    """
+
 
     def __init__(self, dim: int, norm_layer: Type[LayerNorm] = nn.LayerNorm, spatial_dims: int = 3) -> None:
-        """
-        Args:
-            dim: number of feature channels.
-            norm_layer: normalization layer.
-            spatial_dims: number of spatial dims.
-        """
 
         super().__init__()
         self.dim = dim
@@ -655,7 +531,7 @@ class PatchMergingV2(nn.Module):
 
 
 class PatchMerging(PatchMergingV2):
-    """The `PatchMerging` module previously defined in v0.9.0."""
+
 
     def forward(self, x):
         x_shape = x.size()
@@ -685,17 +561,6 @@ MERGING_MODE = {"merging": PatchMerging, "mergingv2": PatchMergingV2}
 
 
 def compute_mask(dims, window_size, shift_size, device):
-    """Computing region masks based on: "Liu et al.,
-    Swin Transformer: Hierarchical Vision Transformer using Shifted Windows
-    <https://arxiv.org/abs/2103.14030>"
-    https://github.com/microsoft/Swin-Transformer
-
-     Args:
-        dims: dimension values.
-        window_size: local window size.
-        shift_size: shift size.
-        device: device.
-    """
 
     cnt = 0
 
@@ -725,12 +590,7 @@ def compute_mask(dims, window_size, shift_size, device):
 
 
 class BasicLayer(nn.Module):
-    """
-    Basic Swin Transformer layer in one stage based on: "Liu et al.,
-    Swin Transformer: Hierarchical Vision Transformer using Shifted Windows
-    <https://arxiv.org/abs/2103.14030>"
-    https://github.com/microsoft/Swin-Transformer
-    """
+
 
     def __init__(
         self,
@@ -747,21 +607,6 @@ class BasicLayer(nn.Module):
         downsample: Optional[nn.Module] = None,
         use_checkpoint: bool = False,
     ) -> None:
-        """
-        Args:
-            dim: number of feature channels.
-            depth: number of layers in each stage.
-            num_heads: number of attention heads.
-            window_size: local window size.
-            drop_path: stochastic depth rate.
-            mlp_ratio: ratio of mlp hidden dim to embedding dim.
-            qkv_bias: add a learnable bias to query, key, value.
-            drop: dropout rate.
-            attn_drop: attention dropout rate.
-            norm_layer: normalization layer.
-            downsample: an optional downsampling layer at the end of the layer.
-            use_checkpoint: use gradient checkpointing for reduced memory usage.
-        """
 
         super().__init__()
         self.window_size = window_size
@@ -825,12 +670,7 @@ class BasicLayer(nn.Module):
 
 
 class SwinTransformer(nn.Module):
-    """
-    Swin Transformer based on: "Liu et al.,
-    Swin Transformer: Hierarchical Vision Transformer using Shifted Windows
-    <https://arxiv.org/abs/2103.14030>"
-    https://github.com/microsoft/Swin-Transformer
-    """
+
 
     def __init__(
         self,
@@ -851,27 +691,6 @@ class SwinTransformer(nn.Module):
         spatial_dims: int = 3,
         downsample="merging",
     ) -> None:
-        """
-        Args:
-            in_chans: dimension of input channels.
-            embed_dim: number of linear projection output channels.
-            window_size: local window size.
-            patch_size: patch size.
-            depths: number of layers in each stage.
-            num_heads: number of attention heads.
-            mlp_ratio: ratio of mlp hidden dim to embedding dim.
-            qkv_bias: add a learnable bias to query, key, value.
-            drop_rate: dropout rate.
-            attn_drop_rate: attention dropout rate.
-            drop_path_rate: stochastic depth rate.
-            norm_layer: normalization layer.
-            patch_norm: add normalization after patch embedding.
-            use_checkpoint: use gradient checkpointing for reduced memory usage.
-            spatial_dims: spatial dimension.
-            downsample: module used for downsampling, available options are `"mergingv2"`, `"merging"` and a
-                user-specified `nn.Module` following the API defined in :py:class:`monai.networks.nets.PatchMerging`.
-                The default is currently `"merging"` (the original version defined in v0.9.0).
-        """
 
         super().__init__()
         self.num_layers = len(depths)
